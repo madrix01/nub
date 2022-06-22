@@ -10,8 +10,6 @@ func main() {
 }
 
 func init() {
-	// Temp folder
-	// Config file
-	// Initiate config
+	utils.InitConfig()
 	utils.GithubLogin()
 }

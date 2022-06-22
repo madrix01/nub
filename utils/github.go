@@ -3,8 +3,6 @@ package utils
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"os"
 	"path"
 
@@ -12,28 +10,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var id string = "f37c4ae65655ffb200ff7f4c82bf0b28"
-
 // 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
-// func GithubLogin() {
-// 	fmt.Println(os.Getenv("GITHUB_TOKEN"))
-// 	ctx := context.Background()
-// 	ts := oauth2.StaticTokenSource(
-// 		&oauth2.Token{AccessToken: "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"},
-// 	)
-// 	tc := oauth2.NewClient(ctx, ts)
-
-// 	client := github.NewClient(tc)
-
-// 	// list all repositories for the authenticated user
-// 	repos, _, err := client.Gists.Get(ctx, id)
-
-// 	if err != nil {
-// 		fmt.Println(err)
-// 	}
-
-// 	fmt.Println(*repos.Files["test.md"].Content)
-// }
 
 var GhClient github.Client
 
@@ -49,14 +26,7 @@ func GithubLogin() {
 	GhClient = *client
 }
 
-func GetGistContent(id string) (string, error) {
-	// ctx := context.Background()
-	// ts := oauth2.StaticTokenSource(
-	// 	&oauth2.Token{AccessToken: "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"},
-	// )
-	// tc := oauth2.NewClient(ctx, ts)
-
-	// client := github.NewClient(tc)
+func getGistContent(id, fileName string) (string, error) {
 
 	ctx := context.Background()
 	gist, _, err := GhClient.Gists.Get(ctx, id)
@@ -65,30 +35,31 @@ func GetGistContent(id string) (string, error) {
 		return "", errors.New("doesn't have string")
 	}
 
-	gistContent := *gist.Files["test.md"].Content
+	gistContent := *gist.Files[github.GistFilename(fileName)].Content
 	return gistContent, nil
 }
 
 // Gist file naming goes like -> g_id.md
-func CreateTempGist() {
+func CreateTempGist(gistName string) string {
 	tmpPath := os.Getenv("TMPDIR")
 	if tmpPath == "" {
 		tmpPath = "/tmp"
 	}
 
-	fileName := "gist_" + id
+	fileName := "gist_" + Cnfg.GistId + ".md"
 	filePath := path.Join(tmpPath, fileName)
 
-	content, err := GetGistContent(id)
+	content, err := getGistContent(Cnfg.GistId, gistName)
 
 	if err != nil {
-		log.Fatal(err)
+		MakeError(err.Error())
 	}
 
 	CreateFile(filePath, content)
+	return filePath
 }
 
-func UpdateGist() {
+func UpdateGist(gistName string) {
 	ctx := context.Background()
 
 	tmpPath := os.Getenv("TMPDIR")
@@ -96,24 +67,47 @@ func UpdateGist() {
 		tmpPath = "/tmp"
 	}
 
-	fileName := "gist_" + id
+	fileName := "gist_" + Cnfg.GistId + ".md"
 	filePath := path.Join(tmpPath, fileName)
 
 	updatedContent, err := ReadFile(filePath)
 
 	if err != nil {
-		log.Fatal(err)
+		MakeError(err.Error())
 	}
-
-	fmt.Println(updatedContent)
 
 	gist := new(github.Gist)
 	gist.Files = make(map[github.GistFilename]github.GistFile)
-	gist.Files["test.md"] = github.GistFile{Content: &updatedContent}
-	// gist := &github.Gist{
-	// 	Files: make(map[github.GistFilename]github.GistFile),
-	// }
+	gist.Files[github.GistFilename(gistName)] = github.GistFile{Content: &updatedContent}
 
-	fmt.Println(gist)
-	GhClient.Gists.Edit(ctx, id, gist)
+	GhClient.Gists.Edit(ctx, Cnfg.GistId, gist)
+}
+
+func GetFileList() []string {
+	ctx := context.Background()
+
+	gist, _, err := GhClient.Gists.Get(ctx, Cnfg.GistId)
+
+	if err != nil {
+		MakeError(err.Error())
+	}
+
+	gistMap := gist.Files
+	keys := []string{}
+	for k := range gistMap {
+		keys = append(keys, string(k))
+	}
+
+	return keys
+}
+
+func CreateNewNote(gistName string) {
+	ctx := context.Background()
+
+	emptyString := gistName
+	gist := new(github.Gist)
+	gist.Files = make(map[github.GistFilename]github.GistFile)
+	gist.Files[github.GistFilename(gistName)] = github.GistFile{Content: &emptyString}
+
+	GhClient.Gists.Edit(ctx, Cnfg.GistId, gist)
 }

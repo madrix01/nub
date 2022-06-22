@@ -17,23 +17,31 @@ var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Edit your notes",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Editing in progress")
-		// OpenEditor()
-		utils.UpdateGist()
+		fmt.Println("Editing")
+		utils.GetFileList()
+		edit()
 	},
 }
 
-func OpenEditor() {
+func edit() {
+	gistNameList := utils.GetFileList()
+	gistName := utils.VarPromptSelect("Select gist", gistNameList)
+	filePath := utils.CreateTempGist(gistName)
+	OpenEditor(filePath)
+	utils.UpdateGist(gistName)
+}
 
-	cmd := exec.Command("vim")
+func OpenEditor(path string) {
+
+	cmd := exec.Command(utils.Cnfg.Editor, path)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println(err)
+		utils.MakeError(err.Error())
 	}
 
-	fmt.Println("Finished")
+	fmt.Println("Gist updated " + "https://gist.github.com/" + utils.Cnfg.Username + "/" + utils.Cnfg.GistId)
 }
