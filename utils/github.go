@@ -17,7 +17,7 @@ var GhClient github.Client
 func GithubLogin() {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: "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"},
+		&oauth2.Token{AccessToken: Cnfg.Token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
