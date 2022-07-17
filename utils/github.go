@@ -10,8 +10,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// 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
-
 var GhClient github.Client
 
 func GithubLogin() {
